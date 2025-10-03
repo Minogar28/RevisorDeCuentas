@@ -32,7 +32,7 @@ const getCredentials = () => {
 
 const connect = async (settings) => {
     const mongoCredentials = helper.getCredentials();
-    console.info(`Connecting to ${mongoCredentials.MONGO_URL}`);
+    // console.info(`Connecting to ${mongoCredentials.MONGO_URL}`);
 
     try {
         await mongoose.connect(mongoCredentials.MONGO_URL, {

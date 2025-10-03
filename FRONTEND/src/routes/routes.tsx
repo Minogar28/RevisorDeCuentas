@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import HomePage from '../pages/HomePage';
 import React from 'react'; // Agrega esta línea si falta
 
-import { PatientPage } from '../pages/PatientPage';
+import { PatientCard } from '../components/PatientCard';
 
 export const router = createBrowserRouter([
   {
@@ -11,7 +11,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/patient/:id',
-    element: <PatientPage />,
+    element: <PatientCard/>,
   },
   {
     path: '*',
