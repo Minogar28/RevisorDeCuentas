@@ -1,18 +1,6 @@
-import React from 'react';
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Box,
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Button,
-  Badge,
-  Fab,
-  Stack,
-  IconButton,
-  Modal,
-  useTheme,
+  Box, Container, Grid, Paper, Typography, Button, Badge, Fab, Stack, useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -23,119 +11,67 @@ import { PatientCard } from '../components/PatientCard';
 import { RecordUploadChat } from '../components/RecordUploadChat';
 import { usePatientFilters } from '../hooks/usePatientFilters';
 import { useResponsive } from '../hooks/useResponsive';
-import { mockPatients } from '../data/mockPatients';
+import { useChat } from '../hooks/useChat';
 
-// ===== Tipos =====
-interface RegistroItem { codigo: string; descripcion: string; }
-interface Patient {
-  historiaClinica: string;
-  identificacion: number;
-  nombre: string;
-  registros: {
-    consultas: RegistroItem[];
-    estancias: RegistroItem[];
-    imagenes: RegistroItem[];
-    insumos: RegistroItem[];
-    laboratorios: RegistroItem[];
-    medicamentos: RegistroItem[];
-    procedimientos: RegistroItem[];
-  };
-}
-
-export interface SearchFilters {
-  searchText: string;
-  filterBy: 'all' | 'nombre' | 'historiaClinica' | 'identificacion';
-  category:
-  | 'all'
-  | 'consultas'
-  | 'estancias'
-  | 'imagenes'
-  | 'insumos'
-  | 'laboratorios'
-  | 'medicamentos'
-  | 'procedimientos';
-}
-
-// ===== Página =====
 export default function HomePage() {
-  const [patients] = useState<Patient[]>(mockPatients as Patient[]);
-  const [expandedPatientId, setExpandedPatientId] = useState<number | null>(null);
+  const [expandedPatientId, setExpandedPatientId] = useState<string | number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
 
-  const { isMobile } = useResponsive();
+ const chat = useChat();
+  const { records = [] } = chat;
+    const { isMobile } = useResponsive();
   const theme = useTheme();
 
-  const {
-    searchFilters,
-    setSearchFilters,
-    filteredPatients,
-  } = usePatientFilters(patients);
+  const { searchFilters, setSearchFilters, filteredPatients } = usePatientFilters(records);
 
-  const togglePatient = useCallback((id: number) => {
+  const togglePatient = useCallback((id: string | number) => {
     setExpandedPatientId(prev => (prev === id ? null : id));
   }, []);
 
-  const toggleChat = useCallback(() => {
-    setIsChatOpen(prev => !prev);
-  }, []);
+  const toggleChat = useCallback(() => setIsChatOpen(prev => !prev), []);
 
-  // En desktop, abrir chat por defecto
   useEffect(() => {
     if (!isMobile) setIsChatOpen(true);
   }, [isMobile]);
+
+  const panelHeight = isMobile ? 'calc(100vh - 200px)' : 'calc(100vh - 260px)';
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Header */}
       <Box sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', py: 2 }}>
         <Container maxWidth="lg">
-          <Typography variant="h5" color="text.primary">
-            Sistema Clínico
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Gestión y carga de registros médicos
-          </Typography>
+          <Typography variant="h5" color="text.primary">Sistema Clínico</Typography>
+          <Typography variant="body1" color="text.secondary">Gestión y carga de registros médicos</Typography>
         </Container>
       </Box>
 
       {/* Main */}
       <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
-        {/* Barra de búsqueda centrada */}
+        {/* Search Bar */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           <Box sx={{ width: '100%', maxWidth: 720 }}>
-            <SearchBar
-              filters={searchFilters}
-              onFiltersChange={setSearchFilters}
-            />
+            <SearchBar filters={searchFilters} onFiltersChange={setSearchFilters} />
           </Box>
         </Box>
 
-        <Grid
-          container
-          spacing={2}
-          sx={{
-            height: {
-              xs: 'calc(100vh - 240px)',
-              sm: 'calc(100vh - 260px)',
-            },
-          }}
-        >
-          {/* Panel izquierdo (chat) solo desktop */}
-          {!isMobile && (
+        <Grid container spacing={2} sx={{ height: panelHeight }}>
+          {/* Panel izquierdo (carga/“chat”) */}
+          {isChatOpen && (
             <Grid
               item
-              lg={isChatOpen ? 4 : 0}
+              xs={12}
+              lg={4}
               sx={{
-                display: { xs: 'none', lg: isChatOpen ? 'block' : 'none' },
-                transition: theme.transitions.create(['width', 'opacity', 'transform'], {
-                  duration: theme.transitions.duration.standard,
-                }),
-                opacity: isChatOpen ? 1 : 0,
-                transform: isChatOpen ? 'scale(1)' : 'scale(0.95)',
-                overflow: 'hidden',
+                height: { xs: '50vh', lg: '100%' },
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <RecordUploadChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                {/* 👇 ya no pasamos props que no existen */}
+                <RecordUploadChat chat={chat} />
+              </Box>
             </Grid>
           )}
 
@@ -143,145 +79,87 @@ export default function HomePage() {
           <Grid
             item
             xs={12}
-            lg={isMobile || !isChatOpen ? 12 : 8}
+            lg={isMobile ? 12 : isChatOpen ? 8 : 12}
             sx={{
-              transition: theme.transitions.create(['width', 'opacity', 'transform'], {
-                duration: theme.transitions.duration.standard,
-              }),
-              opacity: isChatOpen ? 1 : 1, // Siempre visible, pero ajusta width
-              transform: isChatOpen ? 'scale(1)' : 'scale(1)',
+              transition: (t) => t.transitions.create(['width'], { duration: t.transitions.duration.standard }),
+              borderRadius: 3,
+              height: { xs: 'auto', lg: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              maxWidth: '100%',
+              overflow: 'auto',
             }}
-            borderRadius={20}
-
           >
             <Paper
               variant="outlined"
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+              sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'hidden' }}
             >
-              {/* Header de la tarjeta */}
+              {/* Header listado */}
               <Box
                 sx={{
-                  bgcolor: theme => theme.palette.mode === 'light' ? 'rgba(25, 118, 210, 0.06)' : 'action.hover',
-                  borderBottom: 1,
+                  bgcolor: (t) => (t.palette.mode === 'light' ? 'primary.50' : 'action.hover'),
                   borderColor: 'divider',
                   px: 2,
                   py: 1.5,
                 }}
               >
-                <Stack direction="row" alignItems="center" justifyContent="space-between" borderRadius={20}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Typography variant="h6">Registros de Pacientes</Typography>
-                    {filteredPatients.length !== patients.length && (
+                    {/* 👇 comparamos con records (no patients) */}
+                    {filteredPatients.length !== records.length && (
                       <Badge
                         color="secondary"
-                        badgeContent={`${filteredPatients.length}/${patients.length}`}
-                        sx={{
-                          '& .MuiBadge-badge': { right: -10 },
-                        }}
+                        badgeContent={`${filteredPatients.length}/${records.length}`}
+                        sx={{ '& .MuiBadge-badge': { right: -10 } }}
                       />
                     )}
                   </Stack>
-
-                  {/* Botón toggle chat en desktop */}
-                 
                 </Stack>
               </Box>
 
-              {/* Lista */}
-              <Box sx={{ p: { xs: 2, sm: 3 }, overflowY: 'auto', flex: 1 }}>
-                <Stack spacing={2}>
-                  {filteredPatients.length > 0 ? (
-                    filteredPatients.map((patient: Patient) => (
+              {/* Lista con scroll interno */}
+              <Box sx={{ p: { xs: 2, sm: 3 }, overflowY: 'auto', flexGrow: 1, minHeight: 0 }}>
+                {filteredPatients.length ? (
+                  <Stack spacing={2}>
+                    {filteredPatients.map((patient) => (
                       <PatientCard
-                        key={patient.identificacion}
+                        key={String(patient.identificacion)}
                         patient={patient}
                         isExpanded={expandedPatientId === patient.identificacion}
                         onToggle={() => togglePatient(patient.identificacion)}
                       />
-                    ))
-                  ) : (
-                    <Paper
-                      variant="outlined"
+                    ))}
+                  </Stack>
+                ) : (
+                  <Stack spacing={2} alignItems="center" textAlign="center" sx={{ py: 6 }}>
+                    <Box
                       sx={{
-                        textAlign: 'center',
-                        py: 5,
-                        px: 2,
+                        width: 64, height: 64, borderRadius: '50%',
+                        bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}
                     >
-                      <Stack spacing={1.5} alignItems="center">
-                        <Box
-                          sx={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: '50%',
-                            bgcolor: 'action.hover',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <SearchIcon color="disabled" />
-                        </Box>
-                        <Typography variant="subtitle1">No se encontraron pacientes</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Ajusta los filtros de búsqueda o verifica los criterios utilizados.
-                        </Typography>
-                        <Button
-                          variant="outlined"
-                          onClick={() =>
-                            setSearchFilters({
-                              searchText: '',
-                              filterBy: 'all',
-                              category: 'all',
-                            } as SearchFilters)
-                          }
-                        >
-                          Limpiar filtros
-                        </Button>
-                      </Stack>
-                    </Paper>
-                  )}
-                </Stack>
+                      <SearchIcon color="disabled" />
+                    </Box>
+                    <Typography variant="subtitle1">No se encontraron pacientes</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Ajusta los filtros de búsqueda o verifica los criterios utilizados.
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={() => setSearchFilters({ searchText: '', filterBy: 'all', category: 'all' })}
+                    >
+                      Limpiar filtros
+                    </Button>
+                  </Stack>
+                )}
               </Box>
             </Paper>
           </Grid>
         </Grid>
       </Container>
 
-      {/* Modal para Chat en Móvil */}
-      {isMobile && (
-        <Modal
-          open={isChatOpen}
-          onClose={toggleChat}
-          aria-labelledby="chat-modal-title"
-          aria-describedby="chat-modal-description"
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: { xs: '100%', sm: '90%' },
-              maxWidth: 400,
-              maxHeight: '90vh',
-              bgcolor: 'background.paper',
-              borderRadius: 2,
-              boxShadow: 24,
-              overflow: 'hidden',
-              outline: 'none',
-            }}
-          >
-            <RecordUploadChat isOpen={isChatOpen} onClose={toggleChat} />
-          </Box>
-        </Modal>
-      )}
-
-      {/* FAB flotante (móvil y visible en desktop) */}
+      {/* FAB */}
       <Fab
         color="primary"
         onClick={toggleChat}
@@ -289,12 +167,10 @@ export default function HomePage() {
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: theme => theme.zIndex.tooltip + 1,
+          zIndex: (t) => t.zIndex.tooltip + 1,
           opacity: !isMobile && isChatOpen ? 0.6 : 1,
           transform: !isMobile && isChatOpen ? 'scale(0.9)' : 'scale(1)',
-          transition: theme.transitions.create(['opacity', 'transform'], {
-            duration: theme.transitions.duration.short,
-          }),
+          transition: (t) => t.transitions.create(['opacity', 'transform'], { duration: t.transitions.duration.short }),
         }}
         aria-label="Abrir chat"
       >

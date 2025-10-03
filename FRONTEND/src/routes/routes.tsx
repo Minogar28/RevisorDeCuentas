@@ -10,10 +10,6 @@ export const router = createBrowserRouter([
     element: <HomePage />,
   },
   {
-    path: '/patient/:id',
-    element: <PatientCard/>,
-  },
-  {
     path: '*',
     element: <div>404 - Página no encontrada</div>,
 

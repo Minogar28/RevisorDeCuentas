@@ -18,47 +18,60 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
 } from "@mui/icons-material";
-import { useChat } from "../hooks/useChat"; // tu hook JS
-import { toast } from "sonner";
 
-export function RecordUploadChat() {
-  const { messages, inputText, setInputText, handleSendMessage, handleFileUpload, isUploading } = useChat();
-  const fileInputRef = useRef(null);
-const messagesEndRef = useRef<HTMLDivElement>(null);
+type ChatBridge = {
+  messages: any[];
+  inputText: string;
+  setInputText: (v: string) => void;
+  handleSendMessage: () => Promise<void> | void;
+  handleFileUpload: (e: any, ref: React.RefObject<HTMLInputElement>) => Promise<void> | void;
+  isUploading: boolean;
+};
+export function RecordUploadChat({ chat }: { chat: ChatBridge }) {
+  // 👇 usamos lo que viene del padre
+  const { messages, inputText, setInputText, handleSendMessage, handleFileUpload, isUploading } = chat;
 
-  // Scroll automático al último mensaje
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const getMessageStatusIcon = (status) => {
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+
+  const getMessageStatusIcon = (status?: string) => {
     switch (status) {
-      case "sending":
-        return <CircularProgress size={16} color="primary" />;
-      case "sent":
-        return <CheckCircleIcon sx={{ fontSize: 16, color: "success.main" }} />;
-      case "processed":
-        return <CheckCircleIcon sx={{ fontSize: 16, color: "primary.main" }} />;
-      case "error":
-        return <ErrorIcon sx={{ fontSize: 16, color: "error.main" }} />;
-      default:
-        return null;
+      case "sending": return <CircularProgress size={16} color="primary" />;
+      case "sent": return <CheckCircleIcon sx={{ fontSize: 16, color: "success.main" }} />;
+      case "processed": return <CheckCircleIcon sx={{ fontSize: 16, color: "primary.main" }} />;
+      case "error": return <ErrorIcon sx={{ fontSize: 16, color: "error.main" }} />;
+      default: return null;
     }
   };
 
   return (
     <Card
+      elevation={3}
       sx={{
+        // MUY IMPORTANTE para que el contenido interno pueda hacer scroll
         height: "100%",
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
-        borderRadius: 3, // Redondeo general de card
+        borderRadius: 3,
         overflow: "hidden",
+        border: "1px solid rgba(0,0,0,0.12)",
       }}
-      elevation={3}
     >
+      {/* Header fijo (sticky) */}
       <CardHeader
-        sx={{ bgcolor: "primary.50", borderBottom: 1, borderColor: "primary.200" }}
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+          bgcolor: "primary.50",
+          borderBottom: "1px solid rgba(0,0,0,0.12)",
+          // opcional: efecto vidrio sutil
+          backdropFilter: "blur(4px)",
+        }}
         title={
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <ChatBubbleIcon sx={{ fontSize: 20, color: "primary.main" }} />
@@ -67,43 +80,50 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
         }
       />
 
-      <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
-        {/* Mensajes */}
+      {/* Contenido: columna con área de mensajes scrollable + input fijo abajo */}
+      <CardContent
+        sx={{
+          flex: 1,
+          minHeight: 0,            // clave para que el Box de mensajes pueda calcular altura
+          display: "flex",
+          flexDirection: "column",
+          p: 2,
+          gap: 1,
+        }}
+      >
+        {/* Área de mensajes con scroll propio */}
         <Box
           sx={{
             flex: 1,
+            minHeight: 0,          // sin esto, el scroll a veces no aparece
             overflowY: "auto",
-            mb: 2,
             display: "flex",
             flexDirection: "column",
             gap: 2,
+            pr: 0.5,               // un pelín para que no tape el scroll
           }}
         >
-          {messages.map((message) => (
+          {messages.map((msg) => (
             <Box
-              key={message.id}
-              sx={{
-                display: "flex",
-                justifyContent: message.type === "user" ? "flex-end" : "flex-start",
-              }}
+              key={msg.id}
+              sx={{ display: "flex", justifyContent: msg.type === "user" ? "flex-end" : "flex-start" }}
             >
               <Box
                 sx={{
-                  maxWidth: "80%",
-                  borderRadius: 3, // Mensajes con bordes redondeados 20px
+                  maxWidth: "90%",
+                  borderRadius: 3,
                   p: 2,
-                  bgcolor: message.type === "user" ? "primary.main" : "grey.100",
-                  color: message.type === "user" ? "common.white" : "text.primary",
+                  bgcolor: msg.type === "user" ? "primary.main" : "grey.100",
+                  color: msg.type === "user" ? "common.white" : "text.primary",
+                  wordBreak: "break-word",
                 }}
               >
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  {message.content}
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>{msg.content}</Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </Typography>
-                  {message.type === "user" && getMessageStatusIcon(message.status)}
+                  {msg.type === "user" && getMessageStatusIcon(msg.status)}
                 </Box>
               </Box>
             </Box>
@@ -113,7 +133,7 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
 
         <Divider sx={{ my: 1 }} />
 
-        {/* Input + Botones en la misma línea */}
+        {/* Input + botones (altura fija) */}
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           <TextField
             value={inputText}
@@ -124,10 +144,8 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
             size="small"
             fullWidth
             sx={{
-              borderRadius: 5, // 20px aproximadamente
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 5,
-              },
+              borderRadius: 5,
+              "& .MuiOutlinedInput-root": { borderRadius: 5 },
             }}
           />
 
@@ -136,28 +154,18 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
               color="primary"
               onClick={handleSendMessage}
               disabled={!inputText.trim()}
-              sx={{
-                borderRadius: 5,
-                border: 1,
-                borderColor: "grey.300",
-                p: 1.25,
-              }}
+              sx={{ borderRadius: 5, border: 1, borderColor: "grey.300", p: 1.25 }}
             >
               <SendIcon />
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Subir archivo Excel (.xlsx, .xls)" arrow>
+          <Tooltip title="Subir archivo Excel" arrow>
             <IconButton
               color="primary"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              sx={{
-                borderRadius: 5,
-                border: 1,
-                borderColor: "grey.300",
-                p: 1.25,
-              }}
+              sx={{ borderRadius: 5, border: 1, borderColor: "grey.300", p: 1.25 }}
             >
               {isUploading ? <CircularProgress size={16} /> : <AttachFileIcon />}
             </IconButton>

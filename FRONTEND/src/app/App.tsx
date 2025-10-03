@@ -6,7 +6,6 @@ import React from 'react'; // Agrega esta línea si falta
 export default function App() {
   return (
     <>
-    
       <RouterProvider router={router} />
       <Toaster />
     </>

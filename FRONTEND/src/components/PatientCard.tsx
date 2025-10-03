@@ -7,14 +7,10 @@ import {
   Tab,
   Box,
   Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Stack,
   Collapse,
 } from '@mui/material';
 import {
-  ExpandMore as ExpandMoreIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
 } from '@mui/icons-material';
@@ -39,76 +35,16 @@ export function PatientCard({ patient }: PatientCardProps) {
   ] as const;
 
   const [tabValue, setTabValue] = useState<string>(categories[0].key);
-  const [headerExpanded, setHeaderExpanded] = useState(true);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [headerExpanded, setHeaderExpanded] = useState(false);
 
   const handleTabChange = (_e: SyntheticEvent, newValue: string) => setTabValue(newValue);
-
-  const handleItemAccordionChange = (codigo: string) => (_: SyntheticEvent, isExpanded: boolean) => {
-    setExpandedItems((prev) =>
-      isExpanded ? [...prev, codigo] : prev.filter((c) => c !== codigo)
-    );
-  };
-
-  const renderList = (items?: RegistroItem[]) => {
-    if (!items?.length) {
-      return (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ textAlign: 'center', py: 2 }}
-        >
-          Sin registros.
-        </Typography>
-      );
-    }
-
-    return (
-      <Stack spacing={1}>
-        {items.map((item) => (
-          <Accordion
-            key={item.codigo}
-            expanded={expandedItems.includes(item.codigo)}
-            onChange={handleItemAccordionChange(item.codigo)}
-            sx={{
-              borderRadius: 2,
-              border: 1,
-              borderColor: 'grey.200',
-              '&:before': { display: 'none' },
-            }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography
-                variant="body2"
-                sx={{ fontFamily: 'monospace', color: 'primary.main' }}
-              >
-                {item.codigo}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                - {item.descripcion}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ px: 2, pb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Información adicional del registro.
-              </Typography>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-      </Stack>
-    );
-  };
 
   return (
     <Card sx={{ width: '100%', borderRadius: 3, border: 1, borderColor: 'grey.200', overflow: 'hidden' }}>
       {/* Cabecera plegable */}
       <CardHeader
-        onClick={() => setHeaderExpanded((prev) => !prev)}
-        sx={{
-          bgcolor: 'primary.50',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
+        onClick={() => setHeaderExpanded(prev => !prev)}
+        sx={{ bgcolor: 'primary.50', cursor: 'pointer', userSelect: 'none' }}
         title={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="h5" color="primary.main" sx={{ fontWeight: 'bold' }}>
@@ -159,16 +95,27 @@ export function PatientCard({ patient }: PatientCardProps) {
           </Tabs>
 
           {/* Panel de registros */}
-          <Box>
-            {categories.map(({ key, label }) => (
-              <Box key={key} hidden={tabValue !== key}>
-                <Typography variant="subtitle1" color="primary.main" sx={{ mb: 1 }}>
-                  {label}
-                </Typography>
-                {renderList((patient.registros as Record<string, RegistroItem[]>)[key])}
-              </Box>
-            ))}
-          </Box>
+          {categories.map(({ key, label }) => (
+            <Box
+              key={key}
+              hidden={tabValue !== key}
+              sx={{
+                maxHeight: 200, // Altura fija para que el contenido haga scroll
+                overflowY: 'auto',
+              }}
+            >
+              <Typography variant="subtitle1" color="primary.main" sx={{ mb: 1 }}>
+                {label}
+              </Typography>
+              <Stack spacing={1}>
+                {(patient.registros[key] as RegistroItem[]).map((item, index) => (
+                  <Typography key={index} variant="body2" sx={{ fontFamily: 'monospace', color: 'text.primary' }}>
+                    {item.codigo} - {item.descripcion}
+                  </Typography>
+                ))}
+              </Stack>
+            </Box>
+          ))}
         </CardContent>
       </Collapse>
     </Card>
