@@ -1,123 +1,179 @@
-import { useState, SyntheticEvent } from 'react';
+// src/components/PatientCard.tsx
+import React, { useState } from 'react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Stack,
-  Collapse,
+  Box, Paper, Typography, Stack, IconButton, Tabs, Tab, Divider,
+  List, ListItem, ListItemText
 } from '@mui/material';
-import {
-  KeyboardArrowDown as KeyboardArrowDownIcon,
-  KeyboardArrowUp as KeyboardArrowUpIcon,
-} from '@mui/icons-material';
-import React from 'react';
-import { Patient } from '../hooks/usePatient';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
-type RegistroItem = { codigo: string; descripcion: string };
+type Registro = {
+  codigo?: string | number;
+  Codigo?: string | number;
+  Descripcion?: string;
+  descripción?: string;        // por si llega con tilde minúscula
+  Descripción?: string;        // por si llega con tilde mayúscula
+  descripcion?: string;
+  DescripcionArticulo?: string;
+  descripcionArticulo?: string;
+  via?: string;
+  dosis?: string;
+  // presentes pero no se usan salvo como fallback cuando no hay Descripcion:
+  clave?: string;
+  Nombre?: string;
+  nombre?: string;
+};
 
-interface PatientCardProps {
-  patient: Patient;
+type Paciente = {
+  NumHistoria?: string;
+  Id?: string;
+  caso?: string;
+  Fecha?: string;
+  Sexo?: string;
+  Edad?: string;
+  estructura?: {
+    consultas?: Registro[];
+    estancias?: Registro[];
+    medicamentos?: Registro[];
+    laboratorios?: Registro[];
+    imagenes?: Registro[];
+    insumos?: Registro[];
+  };
+};
+
+type Props = {
+  patient: Paciente;
+  isExpanded?: boolean;
+  onToggle?: () => void;
+};
+
+function TabPanel({ value, index, children }: { value: number; index: number; children: React.ReactNode }) {
+  if (value !== index) return null;
+  return <Box sx={{ py: 1.5 }}>{children}</Box>;
 }
 
-export function PatientCard({ patient }: PatientCardProps) {
-  const categories = [
-    { key: 'consultas', label: 'Consultas' },
-    { key: 'estancias', label: 'Estancias' },
-    { key: 'imagenes', label: 'Imágenes' },
-    { key: 'insumos', label: 'Insumos' },
-    { key: 'laboratorios', label: 'Laboratorios' },
-    { key: 'medicamentos', label: 'Medicamentos' },
-    { key: 'procedimientos', label: 'Procedimientos' },
-  ] as const;
+export const PatientCard: React.FC<Props> = ({ patient, isExpanded = false, onToggle }) => {
+  const [tab, setTab] = useState(0);
+  const est = patient?.estructura || {};
+  const {
+    consultas = [],
+    estancias = [],
+    medicamentos = [],
+    laboratorios = [],
+    imagenes = [],
+    insumos = [],
+  } = est;
 
-  const [tabValue, setTabValue] = useState<string>(categories[0].key);
-  const [headerExpanded, setHeaderExpanded] = useState(false);
+  // Render genérico: codigo + Descripcion; en meds agrega via + dosis
+  const renderLista = (arr: Registro[], opts?: { tipo?: 'meds' }) => {
+    if (!Array.isArray(arr) || arr.length === 0) {
+      return (
+        <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
+          No hay registros
+        </Typography>
+      );
+    }
 
-  const handleTabChange = (_e: SyntheticEvent, newValue: string) => setTabValue(newValue);
+    return (
+      <List dense disablePadding sx={{ px: 1 }}>
+        {arr.map((it, i) => {
+          // Código puede venir como string o número y con distintas keys
+          const cod = (it.codigo ?? it.Codigo ?? '') + '';
+
+          // Variantes de descripción desde distintos backends
+          const descRaw =
+            it.Descripcion ??
+            it.Descripción ??
+            it.descripción ??
+            it.descripcion ??
+            it.DescripcionArticulo ??
+            it.descripcionArticulo ??
+            '';
+
+          // Si no hay descripción, usar fallback (Nombre/nombre/clave)
+          const desc =
+            (descRaw && String(descRaw).trim()) ||
+            it.Nombre ||
+            it.nombre ||
+            it.clave ||
+            '';
+
+          // Línea principal con guion si hay ambos
+          const primary =
+            cod && desc ? `${cod} - ${desc}` :
+            cod ? cod :
+            desc || '—';
+
+          // Secundaria solo para medicamentos
+          const secondary =
+            opts?.tipo === 'meds'
+              ? [it.via, it.dosis].filter(Boolean).join(' • ')
+              : undefined;
+
+          return (
+            <ListItem key={`${cod || desc || 'row'}-${i}`} disableGutters>
+              <ListItemText
+                primary={primary}
+                secondary={secondary}
+                primaryTypographyProps={{ variant: 'body2' }}
+                secondaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+    );
+  };
 
   return (
-    <Card sx={{ width: '100%', borderRadius: 3, border: 1, borderColor: 'grey.200', overflow: 'hidden' }}>
-      {/* Cabecera plegable */}
-      <CardHeader
-        onClick={() => setHeaderExpanded(prev => !prev)}
-        sx={{ bgcolor: 'primary.50', cursor: 'pointer', userSelect: 'none' }}
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h5" color="primary.main" sx={{ fontWeight: 'bold' }}>
-              {patient.nombre}
-            </Typography>
-            {headerExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </Box>
-        }
-        subheader={
-          <Typography variant="subtitle1" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-            HC: {patient.historiaClinica} | ID: {patient.identificacion}
+    <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      {/* Header */}
+      <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Stack spacing={0.3}>
+          <Typography variant="h6" sx={{ lineHeight: 1.1 }}>
+            Caso {patient?.caso ?? '—'}
           </Typography>
-        }
-      />
+          <Typography variant="body2" color="text.secondary">
+            HC: {patient?.NumHistoria ?? '—'} &nbsp; | &nbsp; ID: {patient?.Id ?? '—'}
+          </Typography>
+        </Stack>
+        <IconButton onClick={onToggle} size="small" aria-label="expandir">
+          {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+      </Box>
 
-      <Collapse in={headerExpanded} timeout="auto" unmountOnExit>
-        <CardContent sx={{ pt: 2 }}>
-          {/* Tabs horizontales */}
+      {isExpanded && (
+        <>
+          <Divider />
+
+          {/* Tabs */}
           <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
+            value={tab}
+            onChange={(_, v) => setTab(v)}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{
-              mb: 2,
-              bgcolor: 'grey.50',
-              borderRadius: 2,
-              px: 1,
-              '& .MuiTab-root': {
-                textTransform: 'uppercase',
-                fontSize: '0.75rem',
-                minHeight: 'auto',
-                px: 2,
-                py: 1,
-                borderRadius: 1,
-                color: 'text.secondary',
-                '&.Mui-selected': {
-                  color: 'primary.main',
-                  bgcolor: 'primary.100',
-                  fontWeight: 600,
-                },
-              },
-            }}
+            aria-label="tabs paciente"
+            sx={{ px: 1 }}
           >
-            {categories.map(({ key, label }) => (
-              <Tab key={key} value={key} label={label} />
-            ))}
+            <Tab label="Consultas" id="tab-0" />
+            <Tab label="Estancias" id="tab-1" />
+            <Tab label="Imágenes" id="tab-2" />
+            <Tab label="Insumos" id="tab-3" />
+            <Tab label="Laboratorios" id="tab-4" />
+            <Tab label="Medicamentos" id="tab-5" />
           </Tabs>
 
-          {/* Panel de registros */}
-          {categories.map(({ key, label }) => (
-            <Box
-              key={key}
-              hidden={tabValue !== key}
-              sx={{
-                maxHeight: 200, // Altura fija para que el contenido haga scroll
-                overflowY: 'auto',
-              }}
-            >
-              <Typography variant="subtitle1" color="primary.main" sx={{ mb: 1 }}>
-                {label}
-              </Typography>
-              <Stack spacing={1}>
-                {(patient.registros[key] as RegistroItem[]).map((item, index) => (
-                  <Typography key={index} variant="body2" sx={{ fontFamily: 'monospace', color: 'text.primary' }}>
-                    {item.codigo} - {item.descripcion}
-                  </Typography>
-                ))}
-              </Stack>
-            </Box>
-          ))}
-        </CardContent>
-      </Collapse>
-    </Card>
+          {/* Contenido sin scroll interno */}
+          <Box sx={{ px: 2, pb: 2 }}>
+            <TabPanel value={tab} index={0}>{renderLista(consultas)}</TabPanel>
+            <TabPanel value={tab} index={1}>{renderLista(estancias)}</TabPanel>
+            <TabPanel value={tab} index={2}>{renderLista(imagenes)}</TabPanel>
+            <TabPanel value={tab} index={3}>{renderLista(insumos)}</TabPanel>
+            <TabPanel value={tab} index={4}>{renderLista(laboratorios)}</TabPanel>
+            <TabPanel value={tab} index={5}>{renderLista(medicamentos, { tipo: 'meds' })}</TabPanel>
+          </Box>
+        </>
+      )}
+    </Paper>
   );
-}
+};
