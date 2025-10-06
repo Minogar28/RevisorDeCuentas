@@ -176,28 +176,28 @@ export const useChat = () => {
 
       // ✅ Extraer registros del webhook y guardarlos
       let webhookRecords = [];
-if (data?.datos?.dataPaciente || data?.datos?.dataClinica) {
-  const patients = mapApiToPatients(data.datos);
-  setRecords(patients);
-  setMessages(prev => [...prev, {
-    id: (Date.now() + 1).toString(),
-    type: 'system',
-    content: `Se han procesado ${patients.length} registros.`,
-    timestamp: new Date(),
-    status: 'processed',
-  }]);
-} else if (Array.isArray(data?.datos)) {
-  // fallback antiguo
-  const patients = mapApiToPatients({ dataPaciente: data.datos });
-  setRecords(patients);
-  setMessages(prev => [...prev, {
-    id: (Date.now() + 1).toString(),
-    type: 'system',
-    content: `Se han procesado ${patients.length} registros.`,
-    timestamp: new Date(),
-    status: 'processed',
-  }]);
-}
+      if (data?.datos?.dataPaciente || data?.datos?.dataClinica) {
+        const patients = mapApiToPatients(data.datos);
+        setRecords(patients);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          type: 'system',
+          content: `Se han procesado ${patients.length} registros.`,
+          timestamp: new Date(),
+          status: 'processed',
+        }]);
+      } else if (Array.isArray(data?.datos)) {
+        // fallback antiguo
+        const patients = mapApiToPatients({ dataPaciente: data.datos });
+        setRecords(patients);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          type: 'system',
+          content: `Se han procesado ${patients.length} registros.`,
+          timestamp: new Date(),
+          status: 'processed',
+        }]);
+      }
 
 
 

@@ -1,5 +1,5 @@
 var config = {
-  env: 'dev',
+  env: 'development',
   db: {
 
     mongo: {
