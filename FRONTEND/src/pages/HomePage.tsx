@@ -17,9 +17,9 @@ export default function HomePage() {
   const [expandedPatientId, setExpandedPatientId] = useState<string | number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
 
- const chat = useChat();
+  const chat = useChat();
   const { records = [] } = chat;
-    const { isMobile } = useResponsive();
+  const { isMobile } = useResponsive();
   const theme = useTheme();
 
   const { searchFilters, setSearchFilters, filteredPatients } = usePatientFilters(records);
@@ -69,7 +69,6 @@ export default function HomePage() {
               }}
             >
               <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {/* 👇 ya no pasamos props que no existen */}
                 <RecordUploadChat chat={chat} />
               </Box>
             </Grid>
@@ -106,7 +105,6 @@ export default function HomePage() {
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Typography variant="h6">Registros de Pacientes</Typography>
-                    {/* 👇 comparamos con records (no patients) */}
                     {filteredPatients.length !== records.length && (
                       <Badge
                         color="secondary"
@@ -122,14 +120,17 @@ export default function HomePage() {
               <Box sx={{ p: { xs: 2, sm: 3 }, overflowY: 'auto', flexGrow: 1, minHeight: 0 }}>
                 {filteredPatients.length ? (
                   <Stack spacing={2}>
-                    {filteredPatients.map((patient) => (
-                      <PatientCard
-                        key={String(patient.identificacion)}
-                        patient={patient}
-                        isExpanded={expandedPatientId === patient.identificacion}
-                        onToggle={() => togglePatient(patient.identificacion)}
-                      />
-                    ))}
+                    {filteredPatients.map((patient, idx) => {
+                      const pid = patient?.caso ?? patient?.Id ?? patient?.NumHistoria ?? idx;
+                      return (
+                        <PatientCard
+                          key={String(pid)}
+                          patient={patient}
+                          isExpanded={expandedPatientId === pid}
+                          onToggle={() => togglePatient(pid)}
+                        />
+                      );
+                    })}
                   </Stack>
                 ) : (
                   <Stack spacing={2} alignItems="center" textAlign="center" sx={{ py: 6 }}>
