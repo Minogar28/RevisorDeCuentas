@@ -1,6 +1,6 @@
 const fetch = require('node-fetch'); // npm install node-fetch@2
 
-const WEBHOOK_URL ='https://rsolanoia.app.n8n.cloud/webhook/consultas'
+const WEBHOOK_URL ='https://revisordecuentasn8n.onrender.com/webhook/68fb32eb-6227-44ff-a22f-f4f14289aa4b'
 
 const repo = {
   consultar: async ({ findObject }) => {
