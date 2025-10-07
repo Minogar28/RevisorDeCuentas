@@ -5,9 +5,7 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL
 const repo = {
   consultar: async ({ findObject }) => {
     try {
-      // console.log('findObject recibido en repo:', findObject);
 
-      // Simular envío al webhook
       const webhookResponse = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
