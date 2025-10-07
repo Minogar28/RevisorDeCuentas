@@ -1,15 +1,11 @@
 const fetch = require('node-fetch'); // npm install node-fetch@2
 
-const WEBHOOK_URL ='https://revisordecuentasn8n.onrender.com/webhook/68fb32eb-6227-44ff-a22f-f4f14289aa4b'
+const WEBHOOK_URL = process.env.WEBHOOK_URL
 
 const repo = {
   consultar: async ({ findObject }) => {
     try {
-      console.log('findObject recibido en repo:', findObject);
-      // Datos simulados (hardcodeados)
-     
-
-
+      // console.log('findObject recibido en repo:', findObject);
 
       // Simular envío al webhook
       const webhookResponse = await fetch(WEBHOOK_URL, {
@@ -19,7 +15,7 @@ const repo = {
       });
 
       const data = await webhookResponse.json();
-console.log('Datos recibidos del webhook:', data);
+      // console.log('Datos recibidos del webhook:', data);
 
       if (!webhookResponse.ok) {
         console.warn('Error enviando al webhook:', webhookResponse.status);
