@@ -13,24 +13,25 @@ export const usePatientFilters = (patients) => {
     // Filtro por texto de búsqueda
     if (searchFilters.searchText) {
       const searchText = searchFilters.searchText.toLowerCase();
-      
+
       filtered = filtered.filter(patient => {
         switch (searchFilters.filterBy) {
           case 'nombre':
-            return patient.nombre.toLowerCase().includes(searchText);
+            return (patient.nombre ?? '').toLowerCase().includes(searchText);
           case 'historiaClinica':
-            return patient.historiaClinica.toLowerCase().includes(searchText);
+            return (patient.historiaClinica ?? '').toLowerCase().includes(searchText);
           case 'identificacion':
-            return patient.identificacion.toString().includes(searchText);
+            return (patient.identificacion ?? '').toString().includes(searchText);
           case 'all':
           default:
             return (
-              patient.nombre.toLowerCase().includes(searchText) ||
-              patient.historiaClinica.toLowerCase().includes(searchText) ||
-              patient.identificacion.toString().includes(searchText)
+              (patient.nombre ?? '').toLowerCase().includes(searchText) ||
+              (patient.historiaClinica ?? '').toLowerCase().includes(searchText) ||
+              (patient.identificacion ?? '').toString().includes(searchText)
             );
         }
       });
+
     }
 
     // Filtro por categoría de registros

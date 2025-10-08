@@ -1,36 +1,35 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Paper,
-  Stack,
-  TextField,
-  IconButton,
-  Badge,
-  Button,
-  Collapse,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  useTheme,
-} from '@mui/material';
+import ClearIcon from '@mui/icons-material/CleaningServices';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
-import CloseIcon from '@mui/icons-material/Close';
+import {
+  Badge,
+  Box,
+  Chip,
+  Collapse,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  TextField,
+  useTheme
+} from '@mui/material';
+import React,{ useState } from 'react';
 
 type Filters = {
   searchText: string;
   filterBy: 'all' | 'nombre' | 'historiaClinica' | 'identificacion';
   category:
-    | 'all'
-    | 'consultas'
-    | 'estancias'
-    | 'imagenes'
-    | 'insumos'
-    | 'laboratorios'
-    | 'medicamentos'
-    | 'procedimientos';
+  | 'all'
+  | 'consultas'
+  | 'estancias'
+  | 'imagenes'
+  | 'insumos'
+  | 'laboratorios'
+  | 'medicamentos'
+  | 'procedimientos';
 };
 
 export function SearchBar({
@@ -65,7 +64,7 @@ export function SearchBar({
           borderRadius: showAdvanced
             ? { xs: 2, sm: { topLeft: 50, topRight: 50, bottomLeft: 0, bottomRight: 0 } } // Solo top redondeado cuando expandido
             : 50, // Pill completa cuando cerrado
-         
+
           overflow: 'hidden', // Evita glitches en borderRadius transition
           borderColor: 'divider',
         }}
@@ -78,7 +77,7 @@ export function SearchBar({
             px: { xs: 1.5, sm: 2 },
             py: { xs: 1, sm: 1.25 },
             mb: showAdvanced ? 2 : 0, // Espacio sutil cuando expandido (sin Divider para seamless)
-           
+
           }}
         >
           <SearchIcon color="action" sx={{ mr: 1.5, flexShrink: 0 }} />
@@ -120,12 +119,17 @@ export function SearchBar({
               size="small"
               onClick={clearAll}
               aria-label="Limpiar filtros"
-              sx={{ color: 'error.main', flexShrink: 0, '&:hover': { bgcolor: 'error.50' } }}
+              sx={{
+                ml: 1,
+                color: 'main',
+                flexShrink: 0,
+              }}
             >
-              <CloseIcon />
+              <ClearIcon fontSize="small" />
             </IconButton>
           )}
         </Box>
+
 
         {/* Collapse para Filtros - Expande dentro del Paper */}
         <Collapse
@@ -197,8 +201,8 @@ export function SearchBar({
                     filters.filterBy === 'nombre'
                       ? 'Nombre'
                       : filters.filterBy === 'historiaClinica'
-                      ? 'Historia Clínica'
-                      : 'Identificación'
+                        ? 'Historia Clínica'
+                        : 'Identificación'
                   }
                   onDelete={() => handleChipDelete('filterBy')}
                   color="success"
@@ -216,15 +220,6 @@ export function SearchBar({
                 />
               )}
               <Box flexGrow={1} />
-              <Button
-                onClick={clearAll}
-                size="small"
-                variant="text"
-                color="primary"
-                sx={{ minWidth: 'auto', px: 1 }}
-              >
-                Limpiar
-              </Button>
             </Stack>
           )}
         </Collapse>

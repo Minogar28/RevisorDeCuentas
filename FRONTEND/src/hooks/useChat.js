@@ -1,3 +1,4 @@
+// useChat.js
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { gsUrlApi } from '../config/ConfigServer';
@@ -8,10 +9,13 @@ export const useChat = () => {
   const [inputText, setInputText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  // 👉 Aquí guardamos la data EXACTA que llega del webhook
+  // Estados para la barra de carga en el chat
+  const [isProcessing, setIsProcessing] = useState(false); // para solicitudes de texto
+  const [uploadProgress, setUploadProgress] = useState({ processed: 0, total: 0 });
+
+  // Data que llega del webhook
   const [records, setRecords] = useState([]);
 
-  // Helpers mínimos (sin “vibe coding”)
   const toArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
   const ok = (r) => r && typeof r === 'object';
 
@@ -27,6 +31,7 @@ export const useChat = () => {
     };
     setMessages((prev) => [...prev, newMessage]);
     setInputText('');
+    setIsProcessing(true);
 
     try {
       const response = await fetch(`${gsUrlApi}/n8n/consultar`, {
@@ -42,17 +47,13 @@ export const useChat = () => {
         prev.map((m) => (m.id === newMessage.id ? { ...m, status: 'sent' } : m))
       );
 
-      // ✅ Guardar tal cual lo que venga en data.datos (acumulando = multiple carga)
-      let incoming = data?.datos;
-
-      // Soporte legado: si viene { dataPaciente, dataClinica }, tomamos dataPaciente TAL CUAL
-      if (incoming?.dataPaciente || incoming?.dataClinica) {
-        incoming = incoming?.dataPaciente ?? [];
+      let incoming = data && data.datos;
+      if (incoming && (incoming.dataPaciente || incoming.dataClinica)) {
+        incoming = incoming.dataPaciente || [];
       }
 
       if (incoming) {
         const items = toArray(incoming).filter(ok);
-        // ⬇️ acumular en vez de reemplazar
         setRecords((prev) => [...prev, ...items]);
         setMessages((prev) => [
           ...prev,
@@ -72,97 +73,117 @@ export const useChat = () => {
         prev.map((m) => (m.id === newMessage.id ? { ...m, status: 'error' } : m))
       );
       toast.error(`Error al enviar: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleFileUpload = async (event, fileInputRef) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      toast.error('Por favor selecciona un archivo Excel válido');
-      return;
-    }
+ const handleFileUpload = async (event, fileInputRef) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+    toast.error('Por favor selecciona un archivo Excel válido');
+    return;
+  }
 
-    setIsUploading(true);
+  setIsUploading(true);
+  setUploadProgress({ processed: 0, total: 0 });
 
-    const uploadMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: `📎 Archivo subido: ${file.name}`,
-      timestamp: new Date(),
-      status: 'sending',
-    };
-    setMessages((prev) => [...prev, uploadMessage]);
+  const uploadMessage = {
+    id: Date.now().toString(),
+    type: 'user',
+    content: `📎 Archivo subido: ${file.name}`,
+    timestamp: new Date(),
+    status: 'sending',
+  };
+  setMessages((prev) => [...prev, uploadMessage]);
 
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(firstSheet);
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
 
-      const batchSize = 20;
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
+    // Si tu archivo TIENE encabezado real en la primera fila, deja range: 1.
+    // Si NO tiene encabezado, usa range: 0.
+    let rows = XLSX.utils.sheet_to_json(sheet, {
+      header: ["Analisis", "PlanTratamiento"],
+      range: 1,   // <-- cambia a 0 si no hay encabezado en Excel
+      defval: ""
+    });
 
-        const res = await fetch(`${gsUrlApi}/n8n/consultar`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ batch }),
-        });
-        if (!res.ok) throw new Error(`Error en batch ${i / batchSize + 1}`);
+    rows = rows.filter(r => String(r.Analisis).trim() || String(r.PlanTratamiento).trim());
 
-        const batchData = await res.json();
-        let incoming = batchData?.datos;
+    const total = rows.length;
+    setUploadProgress({ processed: 0, total });
 
-        // ✅ Guardar tal cual venga (acumulando)
-        if (incoming) {
-          // también soporta respuesta como texto JSON legacy
-          if (incoming?.content?.[0]?.text) {
-            let text = incoming.content[0].text;
-            text = text.replace(/```json\s*/i, '').replace(/```$/, '');
-            incoming = JSON.parse(text);
-          }
-          // si viniera { dataPaciente, ... } en batch
-          if (incoming?.dataPaciente || incoming?.dataClinica) {
-            incoming = incoming?.dataPaciente ?? [];
-          }
+    for (let i = 0; i < total; i++) {
+      const row = rows[i];
+      const analisis = String(row.Analisis ?? "").trim();
+      const plan = String(row.PlanTratamiento ?? "").trim();
 
-          const items = toArray(incoming).filter(ok);
-          setRecords((prev) => [...prev, ...items]);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString() + i,
-              type: 'system',
-              content: `Batch ${i / batchSize + 1}: ${items.length} registros procesados.`,
-              timestamp: new Date(),
-              status: 'processed',
-            },
-          ]);
+      const inputText = `Analisis: ${analisis}\nPlanTratamiento: ${plan}`;
+
+      const res = await fetch(`${gsUrlApi}/n8n/consultar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputText }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        let incoming = data?.datos;
+        if (incoming?.dataPaciente || incoming?.dataClinica) {
+          incoming = incoming?.dataPaciente || [];
         }
+        if (incoming) {
+          const items = (Array.isArray(incoming) ? incoming : [incoming])
+            .filter(x => x && typeof x === 'object');
+          if (items.length) setRecords(prev => [...prev, ...items]);
+        }
+      } else {
+        // opcional: log/alert del error por fila
+        // const errText = await res.text().catch(() => '');
+        // console.warn('Fila fallida', i+1, errText);
       }
 
-      setMessages((prev) =>
-        prev.map((m) => (m.id === uploadMessage.id ? { ...m, status: 'sent' } : m))
-      );
-
-      toast.success('Archivo procesado y enviado en batches correctamente');
-    } catch (err) {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === uploadMessage.id ? { ...m, status: 'error' } : m))
-      );
-      toast.error(`Error al procesar archivo: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploadProgress({ processed: i + 1, total });
     }
-  };
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `${uploadMessage.id}-done`,
+        type: 'system',
+        content: `Completado: ${total}/${total} filas procesadas.`,
+        timestamp: new Date(),
+        status: 'processed',
+      },
+    ]);
+
+    setMessages((prev) =>
+      prev.map((m) => (m.id === uploadMessage.id ? { ...m, status: 'sent' } : m))
+    );
+    toast.success('Archivo procesado fila por fila');
+  } catch (err) {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === uploadMessage.id ? { ...m, status: 'error' } : m))
+    );
+    toast.error(`Error al procesar archivo: ${err.message}`);
+  } finally {
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+};
+
 
   return {
     messages,
     inputText,
     setInputText,
     isUploading,
+    isProcessing,
+    uploadProgress,
     records,
     handleSendMessage,
     handleFileUpload,

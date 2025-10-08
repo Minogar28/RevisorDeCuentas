@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Box, Container, Grid, Paper, Typography, Button, Badge, Fab, Stack, useTheme,
+  Box, Container, Grid, Paper, Typography, Button, Badge, Fab, Stack, useTheme, Chip, FormControlLabel, Switch
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ChatIcon from '@mui/icons-material/Chat';
+import PageviewIcon from '@mui/icons-material/Pageview';
 import CloseIcon from '@mui/icons-material/Close';
-
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { SearchBar } from '../components/SearchBar';
 import { PatientCard } from '../components/PatientCard';
 import { RecordUploadChat } from '../components/RecordUploadChat';
@@ -104,7 +104,9 @@ export default function HomePage() {
               >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Typography variant="h6">Registros de Pacientes</Typography>
+                    <Typography variant="h6" fontWeight={700} color="primary.main">
+                      Registros de Pacientes
+                    </Typography>
                     {filteredPatients.length !== records.length && (
                       <Badge
                         color="secondary"
@@ -113,12 +115,53 @@ export default function HomePage() {
                       />
                     )}
                   </Stack>
+
+
+
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isChatOpen}
+                        onChange={toggleChat}
+                        color="primary"
+                        sx={{
+                          '& .MuiSwitch-thumb': {
+                            transition: 'all 0.3s ease',
+                          },
+                        }}
+                      />
+                    }
+                    label={isChatOpen ? 'Cargar registros' : 'Ocultar cargue'}
+                    sx={{
+                      ml: 2,
+                      '.MuiTypography-root': {
+                        fontWeight: 500,
+                        color: isChatOpen ? 'primary.main' : 'text.secondary',
+                        transition: 'color 0.3s ease',
+                      },
+                    }}
+                  />
                 </Stack>
               </Box>
 
               {/* Lista con scroll interno */}
               <Box sx={{ p: { xs: 2, sm: 3 }, overflowY: 'auto', flexGrow: 1, minHeight: 0 }}>
-                {filteredPatients.length ? (
+                {records.length === 0 ? (
+                  <Stack spacing={2} alignItems="center" textAlign="center" sx={{ py: 6 }}>
+                    <Box
+                      sx={{
+                        width: 64, height: 64, borderRadius: '50%',
+                        bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <PageviewIcon color="disabled" />
+                    </Box>
+                    <Typography variant="subtitle1">Empieza cargando registros o realiza una búsqueda</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Usa el chat o el botón para cargar archivos Excel y visualizar pacientes.
+                    </Typography>
+                  </Stack>
+                ) : filteredPatients.length ? (
                   <Stack spacing={2}>
                     {filteredPatients.map((patient, idx) => {
                       const pid = patient?.caso ?? patient?.Id ?? patient?.NumHistoria ?? idx;
@@ -131,52 +174,27 @@ export default function HomePage() {
                         />
                       );
                     })}
+                   
                   </Stack>
                 ) : (
                   <Stack spacing={2} alignItems="center" textAlign="center" sx={{ py: 6 }}>
-                    <Box
-                      sx={{
-                        width: 64, height: 64, borderRadius: '50%',
-                        bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <SearchIcon color="disabled" />
-                    </Box>
+
+                    <SearchIcon color="disabled" />
                     <Typography variant="subtitle1">No se encontraron pacientes</Typography>
                     <Typography variant="body2" color="text.secondary">
                       Ajusta los filtros de búsqueda o verifica los criterios utilizados.
                     </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setSearchFilters({ searchText: '', filterBy: 'all', category: 'all' })}
-                    >
-                      Limpiar filtros
-                    </Button>
                   </Stack>
                 )}
+
               </Box>
             </Paper>
           </Grid>
         </Grid>
       </Container>
 
-      {/* FAB */}
-      <Fab
-        color="primary"
-        onClick={toggleChat}
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: (t) => t.zIndex.tooltip + 1,
-          opacity: !isMobile && isChatOpen ? 0.6 : 1,
-          transform: !isMobile && isChatOpen ? 'scale(0.9)' : 'scale(1)',
-          transition: (t) => t.transitions.create(['opacity', 'transform'], { duration: t.transitions.duration.short }),
-        }}
-        aria-label="Abrir chat"
-      >
-        {isChatOpen ? <CloseIcon /> : <ChatIcon />}
-      </Fab>
+
+
     </Box>
   );
 }

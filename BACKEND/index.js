@@ -12,6 +12,7 @@ mongo.connect().then((res) => {
         // Express Server (solo si DB conecta)
         const app = require('./app');
         app.listen(PORT, HOST, () => {  // Usa HOST de config para consistencia
+            console.log(`Your app is running at: http://localhost:${PORT}`);
             console.log(`Escuchando on port ${PORT} running ${NODE_ENV} environment`);
             if (mongo.isConnected()) {
                 console.log(`Mongo isConnected: ${mongo.isConnected()} on ${NODE_ENV} environment`);

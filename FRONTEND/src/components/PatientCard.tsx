@@ -101,8 +101,8 @@ export const PatientCard: React.FC<Props> = ({ patient, isExpanded = false, onTo
           // Línea principal con guion si hay ambos
           const primary =
             cod && desc ? `${cod} - ${desc}` :
-            cod ? cod :
-            desc || '—';
+              cod ? cod :
+                desc || '—';
 
           // Secundaria solo para medicamentos
           const secondary =
@@ -127,53 +127,62 @@ export const PatientCard: React.FC<Props> = ({ patient, isExpanded = false, onTo
 
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
-      {/* Header */}
-      <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Stack spacing={0.3}>
-          <Typography variant="h6" sx={{ lineHeight: 1.1 }}>
-            Caso {patient?.caso ?? '—'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            HC: {patient?.NumHistoria ?? '—'} &nbsp; | &nbsp; ID: {patient?.Id ?? '—'}
-          </Typography>
-        </Stack>
-        <IconButton onClick={onToggle} size="small" aria-label="expandir">
-          {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-        </IconButton>
+  {/* Header */}
+  <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Stack spacing={0.3}>
+      <Typography variant="h6" sx={{ lineHeight: 1.1 }}>
+        Caso {patient?.caso ?? '—'}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        HC: {patient?.NumHistoria ?? '—'} &nbsp; | &nbsp; ID: {patient?.Id ?? '—'}
+      </Typography>
+    </Stack>
+    <IconButton onClick={onToggle} size="small" aria-label="expandir">
+      {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+    </IconButton>
+  </Box>
+
+  {isExpanded && (
+    <>
+      <Divider />
+
+      {/* Layout vertical */}
+      <Box sx={{ display: 'flex', minHeight: 300 }}>
+        {/* Tabs verticales */}
+        <Tabs
+          orientation="vertical"
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          variant="scrollable"
+          sx={{
+            borderRight: 1,
+            borderColor: 'divider',
+            minWidth: 160,
+            bgcolor: 'background.paper',
+            pt: 2,
+          }}
+        >
+          <Tab label="Consultas" id="tab-0" />
+          <Tab label="Estancias" id="tab-1" />
+          <Tab label="Imágenes" id="tab-2" />
+          <Tab label="Insumos" id="tab-3" />
+          <Tab label="Laboratorios" id="tab-4" />
+          <Tab label="Medicamentos" id="tab-5" />
+        </Tabs>
+
+        {/* Contenido */}
+        <Box sx={{ flexGrow: 1, px: 3, py: 2 }}>
+          <TabPanel value={tab} index={0}>{renderLista(consultas)}</TabPanel>
+          <TabPanel value={tab} index={1}>{renderLista(estancias)}</TabPanel>
+          <TabPanel value={tab} index={2}>{renderLista(imagenes)}</TabPanel>
+          <TabPanel value={tab} index={3}>{renderLista(insumos)}</TabPanel>
+          <TabPanel value={tab} index={4}>{renderLista(laboratorios)}</TabPanel>
+          <TabPanel value={tab} index={5}>{renderLista(medicamentos, { tipo: 'meds' })}</TabPanel>
+        </Box>
       </Box>
+    </>
+  )}
+</Paper>
 
-      {isExpanded && (
-        <>
-          <Divider />
-
-          {/* Tabs */}
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="tabs paciente"
-            sx={{ px: 1 }}
-          >
-            <Tab label="Consultas" id="tab-0" />
-            <Tab label="Estancias" id="tab-1" />
-            <Tab label="Imágenes" id="tab-2" />
-            <Tab label="Insumos" id="tab-3" />
-            <Tab label="Laboratorios" id="tab-4" />
-            <Tab label="Medicamentos" id="tab-5" />
-          </Tabs>
-
-          {/* Contenido sin scroll interno */}
-          <Box sx={{ px: 2, pb: 2 }}>
-            <TabPanel value={tab} index={0}>{renderLista(consultas)}</TabPanel>
-            <TabPanel value={tab} index={1}>{renderLista(estancias)}</TabPanel>
-            <TabPanel value={tab} index={2}>{renderLista(imagenes)}</TabPanel>
-            <TabPanel value={tab} index={3}>{renderLista(insumos)}</TabPanel>
-            <TabPanel value={tab} index={4}>{renderLista(laboratorios)}</TabPanel>
-            <TabPanel value={tab} index={5}>{renderLista(medicamentos, { tipo: 'meds' })}</TabPanel>
-          </Box>
-        </>
-      )}
-    </Paper>
   );
 };
