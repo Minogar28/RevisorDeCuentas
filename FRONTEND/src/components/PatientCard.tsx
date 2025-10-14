@@ -34,9 +34,9 @@ type Paciente = {
   estructura?: {
     consultas?: Registro[];
     estancias?: Registro[];
-    medicamentos?: Registro[];
     laboratorios?: Registro[];
     imagenes?: Registro[];
+    medicamentos?: Registro[];
     insumos?: Registro[];
   };
 };
@@ -58,9 +58,9 @@ export const PatientCard: React.FC<Props> = ({ patient, isExpanded = false, onTo
   const {
     consultas = [],
     estancias = [],
-    medicamentos = [],
     laboratorios = [],
     imagenes = [],
+    medicamentos = [],
     insumos = [],
   } = est;
 
@@ -164,20 +164,20 @@ export const PatientCard: React.FC<Props> = ({ patient, isExpanded = false, onTo
         >
           <Tab label="Consultas" id="tab-0" />
           <Tab label="Estancias" id="tab-1" />
-          <Tab label="Imágenes" id="tab-2" />
-          <Tab label="Insumos" id="tab-3" />
-          <Tab label="Laboratorios" id="tab-4" />
-          <Tab label="Medicamentos" id="tab-5" />
+          <Tab label="Laboratorios" id="tab-2" />
+          <Tab label="Imágenes" id="tab-3" />
+          <Tab label="Medicamentos" id="tab-4" />
+          <Tab label="Insumos" id="tab-5" />
         </Tabs>
 
         {/* Contenido */}
         <Box sx={{ flexGrow: 1, px: 3, py: 2 }}>
           <TabPanel value={tab} index={0}>{renderLista(consultas)}</TabPanel>
           <TabPanel value={tab} index={1}>{renderLista(estancias)}</TabPanel>
-          <TabPanel value={tab} index={2}>{renderLista(imagenes)}</TabPanel>
-          <TabPanel value={tab} index={3}>{renderLista(insumos)}</TabPanel>
-          <TabPanel value={tab} index={4}>{renderLista(laboratorios)}</TabPanel>
-          <TabPanel value={tab} index={5}>{renderLista(medicamentos, { tipo: 'meds' })}</TabPanel>
+          <TabPanel value={tab} index={2}>{renderLista(laboratorios)}</TabPanel>
+          <TabPanel value={tab} index={3}>{renderLista(imagenes)}</TabPanel>
+          <TabPanel value={tab} index={4}>{renderLista(medicamentos, { tipo: 'meds' })}</TabPanel>
+          <TabPanel value={tab} index={5}>{renderLista(insumos)}</TabPanel>
         </Box>
       </Box>
     </>

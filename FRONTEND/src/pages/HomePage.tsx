@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Box, Container, Grid, Paper, Typography, Button, Badge, Fab, Stack, useTheme, Chip, FormControlLabel, Switch
+  Box, Container, Grid, Paper, Typography, Badge, Stack, useTheme, FormControlLabel, Switch,
+  IconButton, Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PageviewIcon from '@mui/icons-material/Pageview';
-import CloseIcon from '@mui/icons-material/Close';
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import { SearchBar } from '../components/SearchBar';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { PatientCard } from '../components/PatientCard';
 import { RecordUploadChat } from '../components/RecordUploadChat';
 import { usePatientFilters } from '../hooks/usePatientFilters';
@@ -16,6 +16,7 @@ import { useChat } from '../hooks/useChat';
 export default function HomePage() {
   const [expandedPatientId, setExpandedPatientId] = useState<string | number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const chat = useChat();
   const { records = [] } = chat;
@@ -34,6 +35,51 @@ export default function HomePage() {
     if (!isMobile) setIsChatOpen(true);
   }, [isMobile]);
 
+  // ==== Fullscreen helpers ====
+  const requestFs = async (el: any) => {
+    try {
+      if (el.requestFullscreen) return await el.requestFullscreen();
+      if (el.webkitRequestFullscreen) return await el.webkitRequestFullscreen(); // Safari
+      if (el.msRequestFullscreen) return await el.msRequestFullscreen();         // IE/Edge old
+    } catch (e) {
+      // noop
+    }
+  };
+  const exitFs = async () => {
+    try {
+      if (document.exitFullscreen) return await document.exitFullscreen();
+      if ((document as any).webkitExitFullscreen) return await (document as any).webkitExitFullscreen();
+      if ((document as any).msExitFullscreen) return await (document as any).msExitFullscreen();
+    } catch (e) {
+      // noop
+    }
+  };
+  const handleToggleFullscreen = async () => {
+    if (isFullscreen) {
+      await exitFs();
+    } else {
+      // Pantalla completa del documento completo (puedes cambiar a un contenedor específico si quieres)
+      await requestFs(document.documentElement);
+    }
+  };
+  useEffect(() => {
+    const sync = () => {
+      const fsEl =
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement;
+      setIsFullscreen(!!fsEl);
+    };
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync as any);
+    document.addEventListener('msfullscreenchange', sync as any);
+    return () => {
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync as any);
+      document.removeEventListener('msfullscreenchange', sync as any);
+    };
+  }, []);
+
   const panelHeight = isMobile ? 'calc(100vh - 200px)' : 'calc(100vh - 260px)';
 
   return (
@@ -41,19 +87,31 @@ export default function HomePage() {
       {/* Header */}
       <Box sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', py: 2 }}>
         <Container maxWidth="lg">
-          <Typography variant="h5" color="text.primary">Sistema Clínico</Typography>
-          <Typography variant="body1" color="text.secondary">Gestión y carga de registros médicos</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+            <Box>
+              <Typography variant="h5" color="text.primary">Sistema Clínico</Typography>
+              <Typography variant="body1" color="text.secondary">Gestión y carga de registros médicos</Typography>
+            </Box>
+
+            {/* Botón Pantalla completa (lado derecho) */}
+            <Tooltip title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}>
+              <IconButton
+                onClick={handleToggleFullscreen}
+                color="primary"
+                size="large"
+                aria-label="toggle fullscreen"
+              >
+                {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+              </IconButton>
+            </Tooltip>
+          </Stack>
         </Container>
       </Box>
 
       {/* Main */}
       <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
         {/* Search Bar */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <Box sx={{ width: '100%', maxWidth: 720 }}>
-            <SearchBar filters={searchFilters} onFiltersChange={setSearchFilters} />
-          </Box>
-        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }} />
 
         <Grid container spacing={2} sx={{ height: panelHeight }}>
           {/* Panel izquierdo (carga/“chat”) */}
@@ -116,8 +174,6 @@ export default function HomePage() {
                     )}
                   </Stack>
 
-
-
                   <FormControlLabel
                     control={
                       <Switch
@@ -131,7 +187,7 @@ export default function HomePage() {
                         }}
                       />
                     }
-                    label={isChatOpen ? 'Cargar registros' : 'Ocultar cargue'}
+                    label={isChatOpen ? 'Ocultar cargue' : 'Cargar registros'}
                     sx={{
                       ml: 2,
                       '.MuiTypography-root': {
@@ -174,11 +230,9 @@ export default function HomePage() {
                         />
                       );
                     })}
-                   
                   </Stack>
                 ) : (
                   <Stack spacing={2} alignItems="center" textAlign="center" sx={{ py: 6 }}>
-
                     <SearchIcon color="disabled" />
                     <Typography variant="subtitle1">No se encontraron pacientes</Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -186,15 +240,11 @@ export default function HomePage() {
                     </Typography>
                   </Stack>
                 )}
-
               </Box>
             </Paper>
           </Grid>
         </Grid>
       </Container>
-
-
-
     </Box>
   );
 }
